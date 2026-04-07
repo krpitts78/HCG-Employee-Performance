@@ -1,1 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HCG Employee Performance Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg-primary: #0d1117;
+    --bg-secondary: #161b22;
+    --bg-card: #1c2128;
+    --bg-hover: #21262d;
+    --accent: #d4a017;
+    --accent-dim: #9a7410;
+    --text-primary: #e6edf3;
+    --text-secondary: #8b949e;
+    --text-muted: #6e7681;
+    --border: #30363d;
+    --green: #3fb950;
+    --red: #f85149;
+    --amber: #d29922;
+    --blue: #58a6ff;
+    --green-bg: rgba(63,185,80,0.12);
+    --red-bg: rgba(248,81,73,0.12);
+    --amber-bg: rgba(210,153,34,0.12);
+    --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+    --font-ui: 'Roboto Condensed', 'Arial Narrow', sans-serif;
+  }
 
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    font-size: 14px;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  #header {
+    background: var(--bg-secondary);
+    border-bottom: 2px solid var(--accent);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-left { display: flex; flex-direction: column; }
+  .company-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .subtitle { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .header-field {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .header-field label { font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
+  .header-field input {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    width: 110px;
+  }
+  .header-field input:focus { outline: none; border-color: var(--accent); }
+  .btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-family: var(--font-ui);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-accent {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+  .btn-accent:hover { background: #e8b520; color: #000; border-color: #e8b520; }
+
+  /* MAIN LAYOUT */
+  #main { padding: 16px 20px; max-width: 1600px; margin: 0 auto; }
+
+  /* SECTION TITLES */
+  .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    padding-left: 2px;
+    border-left: 3px solid var(--accent);
+    padding-left: 8px;
+  }
+
+  /* METRIC CARDS */
+  #metrics { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 20px; }
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+  }
+  .card-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .card-value {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+  .card-value.green { color: var(--green); }
+  .card-value.red { color: var(--red); }
+  .card-value.amber { color: var(--amber); }
+  .card-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  /* BONUS RULES BANNER */
+  #bonus-rules {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
+    padding: 8px 14px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  #bonus-rules .br-label { font-weight: 700; color: var(--accent); margin-right: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .br-tier {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 3px 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+  }
+  .br-tier.green { border-color: var(--green); color: var(--green); }
+  .br-tier.amber { border-color: var(--amber); color: var(--amber); }
+  .br-tier.red { border-color: var(--red); color: var(--red); }
+
+  /* TWO COLUMN LAYOUT */
+  #charts-area { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+  }
+
+  /* BAR CHART */
+  #bar-container { height: 320px; position: relative; }
+
+  /* GAUGE PANEL */
+  #gauge-panel { display: flex; flex-direction: column; }
+  #gauge-placeholder {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    gap: 8px;
+    min-height: 280px;
+  }
+  #gauge-placeholder svg { opacity: 0.2; }
+  #gauge-content { display: none; flex-direction: column; gap: 12px; }
+  #gauge-name { font-size: 16px; font-weight: 700; color: var(--accent); }
+  #gauge-code { font-size: 11px; color: var(--text-muted); }
+  #gauge-wrap { display: flex; justify-content: center; }
+  #gauge-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .gauge-stat {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 10px;
+  }
+  .gauge-stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 3px; }
+  .gauge-stat-value { font-family: var(--font-mono); font-size: 14px; color: var(--text-primary); }
+
+  /* SVG Gauge */
+  .gauge-svg { width: 200px; height: 110px; }
+
+  /* TABLE */
+  #table-section { margin-bottom: 20px; }
+  .table-wrap { overflow-x: auto; border-radius: 6px; border: 1px solid var(--border); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead tr {
+    background: var(--bg-secondary);
+    border-bottom: 2px solid var(--border);
+  }
+  th {
+    padding: 9px 10px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+    position: relative;
+  }
+  th:hover { color: var(--accent); }
+  th.sort-asc::after { content: ' ▲'; color: var(--accent); font-size: 9px; }
+  th.sort-desc::after { content: ' ▼'; color: var(--accent); font-size: 9px; }
+  td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    white-space: nowrap;
+  }
+  td.name-cell { font-family: var(--font-ui); font-size: 13px; font-weight: 700; }
+  tbody tr { cursor: pointer; transition: background 0.1s; }
+  tbody tr:hover { background: var(--bg-hover); }
+  tbody tr.selected { background: rgba(212,160,23,0.1); border-left: 3px solid var(--accent); }
+  tbody tr:last-child td { border-bottom: none; }
+  .eff-green { color: var(--green); font-weight: 600; }
+  .eff-amber { color: var(--amber); }
+  .eff-red { color: var(--red); }
+  .pl-positive { color: var(--green); }
+  .pl-negative { color: var(--red); }
+  .bonus-chip {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .bonus-chip.green { background: var(--green-bg); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+  .bonus-chip.amber { background: var(--amber-bg); color: var(--amber); border: 1px solid rgba(210,153,34,0.3); }
+  .bonus-chip.red { background: var(--red-bg); color: var(--red); border: 1px solid rgba(248,81,73,0.3); }
+
+  /* TOTALS ROW */
+  .totals-row td { background: var(--bg-secondary); font-weight: 700; border-top: 2px solid var(--border); color: var(--accent); }
+  .totals-row td.name-cell { font-family: var(--font-mono); }
+
+  /* DATA ENTRY */
+  #data-entry-section { margin-bottom: 20px; }
+  #data-entry-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 6px 6px 0 0;
+    padding: 10px 16px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  #data-entry-toggle:hover { background: var(--bg-hover); }
+  #data-entry-toggle.collapsed { border-radius: 6px; }
+  .toggle-label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); padding-left: 8px; border-left: 3px solid var(--accent); }
+  .toggle-arrow { color: var(--text-muted); transition: transform 0.2s; font-size: 12px; }
+  .toggle-arrow.open { transform: rotate(180deg); }
+
+  #data-entry-body {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    padding: 16px;
+    display: none;
+  }
+  #data-entry-body.open { display: block; }
+
+  .entry-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-bottom: 16px; }
+  .entry-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 12px;
+  }
+  .entry-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .entry-card-name { font-weight: 700; font-size: 13px; color: var(--text-primary); }
+  .entry-card-code { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+  .btn-remove {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-remove:hover { border-color: var(--red); color: var(--red); }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; }
+  .field-group { display: flex; flex-direction: column; gap: 3px; }
+  .field-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .field-input {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    padding: 5px 7px;
+    border-radius: 3px;
+    width: 100%;
+  }
+  .field-input:focus { outline: none; border-color: var(--accent); }
+
+  /* Add Employee */
+  #add-employee-form {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 12px;
+    margin-bottom: 16px;
+  }
+  #add-employee-form h4 { font-size: 11px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; }
+  .add-form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; align-items: end; }
+  #month-control {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  #month-control label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
+  #month-control input {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    padding: 5px 8px;
+    border-radius: 3px;
+    width: 180px;
+  }
+  #month-control input:focus { outline: none; border-color: var(--accent); }
+
+  /* PRINT STYLES */
+  @media print {
+    body { background: #fff; color: #000; font-family: Arial, sans-serif; }
+    #header { background: #fff; border-bottom: 2px solid #000; position: static; }
+    .company-name { color: #000; }
+    .btn, #data-entry-section, #charts-area, #bonus-rules { display: none !important; }
+    .card { background: #f5f5f5; border: 1px solid #ccc; break-inside: avoid; }
+    .card-value { color: #000 !important; }
+    .card-label, .card-sub { color: #555; }
+    table { border-collapse: collapse; font-size: 11px; }
+    th, td { border: 1px solid #ccc; padding: 5px 7px; color: #000 !important; background: #fff !important; }
+    thead tr { background: #e8e8e8 !important; }
+    .totals-row td { background: #f0f0f0 !important; color: #000 !important; font-weight: bold; }
+    #metrics { display: grid; grid-template-columns: repeat(5,1fr); }
+    .section-title { color: #333; border-left-color: #000; }
+    a { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <div class="header-left">
+    <div class="company-name">Houston Centerless Grinding Service LLC</div>
+    <div class="subtitle">Operator Performance Dashboard</div>
+  </div>
+  <div class="header-right">
+    <div class="header-field">
+      <label>PERIOD:</label>
+      <input type="text" id="period-display" value="March 2026" readonly style="width:130px;cursor:default;background:transparent;border-color:transparent;font-size:15px;color:var(--accent);font-weight:700;">
+    </div>
+    <div class="header-field">
+      <label>SHOP RATE:</label>
+      <input type="number" id="shop-rate" value="126" min="1" step="1">
+    </div>
+    <button class="btn" onclick="window.print()">&#128438; PRINT</button>
+  </div>
+</div>
+
+<div id="main">
+
+  <!-- METRICS -->
+  <div class="section-title" style="margin-bottom:10px;">Shop Summary — <span id="period-title">March 2026</span></div>
+  <div id="metrics">
+    <div class="card">
+      <div class="card-label">Shop Efficiency</div>
+      <div class="card-value" id="m-efficiency">—</div>
+      <div class="card-sub">Est Hrs / Actual Hrs</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Total Value Produced</div>
+      <div class="card-value" id="m-value">—</div>
+      <div class="card-sub">Est Hrs × Shop Rate</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Total Labor Cost</div>
+      <div class="card-value" id="m-labor">—</div>
+      <div class="card-sub">Sum of all payroll</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Total Profit / Loss</div>
+      <div class="card-value" id="m-profit">—</div>
+      <div class="card-sub">Value − Labor Cost</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Total Bonus Payout</div>
+      <div class="card-value amber" id="m-bonus">—</div>
+      <div class="card-sub" id="m-bonus-sub">Based on efficiency tiers</div>
+    </div>
+  </div>
+
+  <!-- BONUS RULES -->
+  <div id="bonus-rules">
+    <span class="br-label">&#9733; Bonus Tiers</span>
+    <span class="br-tier red">&lt;70% = No Bonus</span>
+    <span class="br-tier amber">70–79% = $200</span>
+    <span class="br-tier amber">80–89% = $300</span>
+    <span class="br-tier amber">90–99% = $400</span>
+    <span class="br-tier green">100%+ = $500</span>
+  </div>
+
+  <!-- CHARTS + GAUGE -->
+  <div id="charts-area">
+    <div class="panel">
+      <div class="section-title" style="margin-bottom:12px;">Efficiency by Operator</div>
+      <div id="bar-container">
+        <canvas id="barChart"></canvas>
+      </div>
+    </div>
+    <div class="panel" id="gauge-panel">
+      <div class="section-title" style="margin-bottom:12px;">Employee Detail</div>
+      <div id="gauge-placeholder">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span>Click any row in the table<br>to view employee detail</span>
+      </div>
+      <div id="gauge-content">
+        <div>
+          <div id="gauge-name"></div>
+          <div id="gauge-code"></div>
+        </div>
+        <div id="gauge-wrap">
+          <svg class="gauge-svg" viewBox="0 0 200 110" id="gauge-svg">
+            <defs>
+              <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#f85149"/>
+                <stop offset="40%" style="stop-color:#d29922"/>
+                <stop offset="70%" style="stop-color:#3fb950"/>
+                <stop offset="100%" style="stop-color:#58a6ff"/>
+              </linearGradient>
+            </defs>
+            <!-- Background arc -->
+            <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="#30363d" stroke-width="14" stroke-linecap="round"/>
+            <!-- Value arc -->
+            <path id="gauge-arc" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#gaugeGrad)" stroke-width="14" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="251.3"/>
+            <!-- Needle -->
+            <line id="gauge-needle" x1="100" y1="100" x2="100" y2="28" stroke="#e6edf3" stroke-width="2" stroke-linecap="round" transform="rotate(0, 100, 100)"/>
+            <circle cx="100" cy="100" r="5" fill="#e6edf3"/>
+            <!-- Labels -->
+            <text x="16" y="110" fill="#6e7681" font-size="9" font-family="monospace">0%</text>
+            <text x="90" y="18" fill="#6e7681" font-size="9" font-family="monospace" text-anchor="middle">100%</text>
+            <text x="178" y="110" fill="#6e7681" font-size="9" font-family="monospace" text-anchor="end">200%+</text>
+          </svg>
+        </div>
+        <div id="gauge-eff-label" style="text-align:center;font-family:var(--font-mono);font-size:24px;font-weight:600;margin-top:-8px;"></div>
+        <div id="gauge-stats"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div id="table-section">
+    <div class="section-title" style="margin-bottom:10px;">Operator Performance Table <span style="color:var(--text-muted);font-weight:400;font-size:10px;">— click column header to sort · click row to inspect</span></div>
+    <div class="table-wrap">
+      <table id="perf-table">
+        <thead>
+          <tr>
+            <th data-col="code" data-type="num">Code</th>
+            <th data-col="name" data-type="str">Name</th>
+            <th data-col="estHours" data-type="num">Est Hrs</th>
+            <th data-col="actualHours" data-type="num">Actual Hrs</th>
+            <th data-col="efficiency" data-type="num">Eff %</th>
+            <th data-col="hoursSaved" data-type="num">Hrs Saved</th>
+            <th data-col="valueProduced" data-type="num">Value Produced</th>
+            <th data-col="laborCost" data-type="num">Labor Cost</th>
+            <th data-col="profitLoss" data-type="num">Profit / Loss</th>
+            <th data-col="effectiveRate" data-type="num">Eff. Rate/Hr</th>
+            <th data-col="bonusTier" data-type="str">Bonus Tier</th>
+            <th data-col="bonusAmount" data-type="num">Bonus</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+        <tfoot id="table-foot"></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- DATA ENTRY -->
+  <div id="data-entry-section">
+    <div id="data-entry-toggle" class="collapsed" onclick="toggleDataEntry()">
+      <span class="toggle-label">&#9998; Edit Employee Data</span>
+      <span class="toggle-arrow" id="toggle-arrow">▼</span>
+    </div>
+    <div id="data-entry-body">
+      <div id="month-control" style="margin-bottom:14px;">
+        <label>Month / Period Label:</label>
+        <input type="text" id="month-input" value="March 2026" placeholder="e.g. April 2026" oninput="updatePeriod(this.value)">
+        <label>Shop Rate ($/hr):</label>
+        <input type="number" id="shop-rate-entry" value="126" min="1" style="width:90px;" oninput="syncRate(this.value)">
+      </div>
+      <div id="entry-grid" class="entry-grid"></div>
+      <div id="add-employee-form">
+        <h4>&#43; Add Employee</h4>
+        <div class="add-form-grid">
+          <div class="field-group">
+            <div class="field-label">Code</div>
+            <input class="field-input" type="text" id="new-code" placeholder="e.g. 215">
+          </div>
+          <div class="field-group">
+            <div class="field-label">Name</div>
+            <input class="field-input" type="text" id="new-name" placeholder="First Last">
+          </div>
+          <div class="field-group">
+            <div class="field-label">Est Hours</div>
+            <input class="field-input" type="number" id="new-est" placeholder="0.000" step="0.001">
+          </div>
+          <div class="field-group">
+            <div class="field-label">Actual Hours</div>
+            <input class="field-input" type="number" id="new-actual" placeholder="0.000" step="0.001">
+          </div>
+          <div class="field-group">
+            <div class="field-label">Total Hours</div>
+            <input class="field-input" type="number" id="new-total" placeholder="0.00" step="0.01">
+          </div>
+          <div class="field-group">
+            <div class="field-label">OT Hours</div>
+            <input class="field-input" type="number" id="new-ot" placeholder="0.00" step="0.01">
+          </div>
+          <div class="field-group">
+            <div class="field-label">Payroll ($)</div>
+            <input class="field-input" type="number" id="new-payroll" placeholder="0.00" step="0.01">
+          </div>
+          <div class="field-group" style="align-self:end;">
+            <button class="btn btn-accent" onclick="addEmployee()" style="width:100%;padding:7px;">ADD EMPLOYEE</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+let shopRate = 126;
+let period = "March 2026";
+let selectedEmployee = null;
+let sortCol = 'efficiency';
+let sortDir = 'desc';
+
+let employees = [
+  { code:'207', name:'Andrew Jones',     estHours:336.117, actualHours:125.867, totalHours:233.75, otHours:52.65, payroll:5721.66 },
+  { code:'163', name:'Armando Rendon',   estHours:139.033, actualHours:154.617, totalHours:232.10, otHours:51.70, payroll:5416.94 },
+  { code:'188', name:'Daniel Hernandez', estHours:221.250, actualHours:180.618, totalHours:218.58, otHours:37.58, payroll:4747.51 },
+  { code:'212', name:'Darrius Mayo',     estHours:89.617,  actualHours:57.550,  totalHours:190.17, otHours:10.97, payroll:2543.46 },
+  { code:'132', name:'Francisco Rivas',  estHours:231.167, actualHours:164.916, totalHours:195.70, otHours:34.08, payroll:5105.79 },
+  { code:'177', name:'Gregorio Sigona',  estHours:156.467, actualHours:167.668, totalHours:225.88, otHours:51.38, payroll:5534.65 },
+  { code:'171', name:'Hector Gonzalez',  estHours:184.067, actualHours:163.784, totalHours:224.42, otHours:41.75, payroll:5396.43 },
+  { code:'121', name:'Jade McMillon',    estHours:298.183, actualHours:104.401, totalHours:221.32, otHours:39.70, payroll:7234.98 },
+  { code:'150', name:'Jorge Revuelta',   estHours:136.300, actualHours:149.900, totalHours:222.33, otHours:42.18, payroll:6085.64 },
+  { code:'161', name:'Lupe Tapia',       estHours:193.933, actualHours:206.817, totalHours:237.33, otHours:57.28, payroll:6781.85 },
+  { code:'198', name:'Roland Fields',    estHours:214.183, actualHours:129.117, totalHours:225.78, otHours:44.52, payroll:4464.76 },
+];
+
+// ─── COMPUTED ─────────────────────────────────────────────────────────────────
+function compute(e) {
+  const eff = e.actualHours > 0 ? (e.estHours / e.actualHours) * 100 : 0;
+  const hoursSaved = e.estHours - e.actualHours;
+  const valueProduced = e.estHours * shopRate;
+  const laborCost = e.payroll;
+  const profitLoss = valueProduced - laborCost;
+  const effectiveRate = e.totalHours > 0 ? e.payroll / e.totalHours : 0;
+  let bonusAmount = 0;
+  let bonusTier = 'None';
+  if (eff >= 100)      { bonusAmount = 500; bonusTier = '100%+'; }
+  else if (eff >= 90)  { bonusAmount = 400; bonusTier = '90–99%'; }
+  else if (eff >= 80)  { bonusAmount = 300; bonusTier = '80–89%'; }
+  else if (eff >= 70)  { bonusAmount = 200; bonusTier = '70–79%'; }
+  else                 { bonusAmount = 0;   bonusTier = '<70%'; }
+  return { ...e, efficiency: eff, hoursSaved, valueProduced, laborCost, profitLoss, effectiveRate, bonusAmount, bonusTier };
+}
+
+function getAll() { return employees.map(compute); }
+
+// ─── FORMATTING ───────────────────────────────────────────────────────────────
+const fmt$ = v => '$' + v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+const fmtN = (v,d=3) => v.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
+const fmtPct = v => fmtN(v,1) + '%';
+
+// ─── METRICS ──────────────────────────────────────────────────────────────────
+function updateMetrics(data) {
+  const totalEst = data.reduce((s,e) => s + e.estHours, 0);
+  const totalAct = data.reduce((s,e) => s + e.actualHours, 0);
+  const shopEff = totalAct > 0 ? (totalEst / totalAct) * 100 : 0;
+  const totalValue = data.reduce((s,e) => s + e.valueProduced, 0);
+  const totalLabor = data.reduce((s,e) => s + e.laborCost, 0);
+  const totalPL = totalValue - totalLabor;
+  const totalBonus = data.reduce((s,e) => s + e.bonusAmount, 0);
+
+  document.getElementById('m-efficiency').textContent = fmtPct(shopEff);
+  document.getElementById('m-efficiency').className = 'card-value ' + effClass(shopEff);
+  document.getElementById('m-value').textContent = fmt$(totalValue);
+  document.getElementById('m-labor').textContent = fmt$(totalLabor);
+  const profitEl = document.getElementById('m-profit');
+  profitEl.textContent = (totalPL >= 0 ? '+' : '') + fmt$(totalPL);
+  profitEl.className = 'card-value ' + (totalPL >= 0 ? 'green' : 'red');
+  document.getElementById('m-bonus').textContent = fmt$(totalBonus);
+  document.getElementById('m-bonus-sub').textContent = data.filter(e=>e.bonusAmount>0).length + ' employees qualify';
+}
+
+function effClass(v) {
+  if (v >= 100) return 'green';
+  if (v >= 70)  return 'amber';
+  return 'red';
+}
+
+// ─── BAR CHART ────────────────────────────────────────────────────────────────
+let barChartInstance = null;
+
+function updateBarChart(data) {
+  const sorted = [...data].sort((a,b) => b.efficiency - a.efficiency);
+  const labels = sorted.map(e => e.name.split(' ')[0] + ' ' + e.name.split(' ').slice(1).join(' ').charAt(0) + '.');
+  const values = sorted.map(e => +e.efficiency.toFixed(1));
+  const colors = sorted.map(e => e.efficiency >= 100 ? '#3fb950' : e.efficiency >= 70 ? '#d29922' : '#f85149');
+  const bgColors = sorted.map(e => e.efficiency >= 100 ? 'rgba(63,185,80,0.18)' : e.efficiency >= 70 ? 'rgba(210,153,34,0.18)' : 'rgba(248,81,73,0.18)');
+
+  if (barChartInstance) barChartInstance.destroy();
+
+  const ctx = document.getElementById('barChart').getContext('2d');
+  barChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: bgColors,
+        borderColor: colors,
+        borderWidth: 1.5,
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ' ' + ctx.raw.toFixed(1) + '% efficiency'
+          },
+          backgroundColor: '#1c2128',
+          borderColor: '#30363d',
+          borderWidth: 1,
+          titleColor: '#e6edf3',
+          bodyColor: '#8b949e',
+        },
+        datalabels: { display: false },
+      },
+      scales: {
+        x: {
+          grid: { color: '#21262d' },
+          ticks: { color: '#6e7681', font: { family: 'JetBrains Mono', size: 11 }, callback: v => v + '%' },
+          border: { color: '#30363d' },
+        },
+        y: {
+          grid: { display: false },
+          ticks: { color: '#8b949e', font: { family: 'Roboto Condensed', size: 12 } },
+          border: { color: '#30363d' },
+        }
+      },
+      animation: { duration: 400, easing: 'easeOutQuart' }
+    },
+    plugins: [{
+      id: 'valueLabels',
+      afterDatasetsDraw(chart) {
+        const { ctx, data, scales: { x, y } } = chart;
+        ctx.save();
+        data.datasets[0].data.forEach((val, i) => {
+          const meta = chart.getDatasetMeta(0);
+          const bar = meta.data[i];
+          const xPos = x.getPixelForValue(val) + 5;
+          const yPos = bar.y;
+          ctx.fillStyle = val >= 100 ? '#3fb950' : val >= 70 ? '#d29922' : '#f85149';
+          ctx.font = '600 11px JetBrains Mono, monospace';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(val.toFixed(1) + '%', xPos, yPos);
+        });
+        ctx.restore();
+      }
+    }]
+  });
+}
+
+// ─── TABLE ────────────────────────────────────────────────────────────────────
+function updateTable(data) {
+  const sorted = [...data].sort((a, b) => {
+    const th = document.querySelector(`th[data-col="${sortCol}"]`);
+    const isNum = th && th.dataset.type === 'num';
+    const av = isNum ? parseFloat(a[sortCol]) : String(a[sortCol]);
+    const bv = isNum ? parseFloat(b[sortCol]) : String(b[sortCol]);
+    if (av < bv) return sortDir === 'asc' ? -1 : 1;
+    if (av > bv) return sortDir === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = '';
+
+  sorted.forEach((e, idx) => {
+    const ec = effClass(e.efficiency);
+    const tr = document.createElement('tr');
+    if (selectedEmployee === e.code) tr.classList.add('selected');
+    tr.dataset.code = e.code;
+    tr.innerHTML = `
+      <td style="color:var(--text-muted)">${e.code}</td>
+      <td class="name-cell">${e.name}</td>
+      <td>${fmtN(e.estHours)}</td>
+      <td>${fmtN(e.actualHours)}</td>
+      <td class="eff-${ec}">${fmtPct(e.efficiency)}</td>
+      <td class="${e.hoursSaved >= 0 ? 'pl-positive' : 'pl-negative'}">${e.hoursSaved >= 0 ? '+' : ''}${fmtN(e.hoursSaved)}</td>
+      <td>${fmt$(e.valueProduced)}</td>
+      <td>${fmt$(e.laborCost)}</td>
+      <td class="${e.profitLoss >= 0 ? 'pl-positive' : 'pl-negative'}">${e.profitLoss >= 0 ? '+' : ''}${fmt$(e.profitLoss)}</td>
+      <td>${fmt$(e.effectiveRate)}</td>
+      <td><span class="bonus-chip ${ec}">${e.bonusTier}</span></td>
+      <td class="${e.bonusAmount > 0 ? 'eff-green' : 'eff-red'}">${e.bonusAmount > 0 ? fmt$(e.bonusAmount) : '—'}</td>
+    `;
+    tr.addEventListener('click', () => showDetail(e.code));
+    tbody.appendChild(tr);
+  });
+
+  // Totals
+  const tfoot = document.getElementById('table-foot');
+  const totalEst = data.reduce((s,e) => s+e.estHours, 0);
+  const totalAct = data.reduce((s,e) => s+e.actualHours, 0);
+  const totalHrsSaved = data.reduce((s,e) => s+e.hoursSaved, 0);
+  const totalValue = data.reduce((s,e) => s+e.valueProduced, 0);
+  const totalLabor = data.reduce((s,e) => s+e.laborCost, 0);
+  const totalPL = totalValue - totalLabor;
+  const totalBonus = data.reduce((s,e) => s+e.bonusAmount, 0);
+  const shopEff = totalAct > 0 ? (totalEst/totalAct)*100 : 0;
+  tfoot.innerHTML = `
+    <tr class="totals-row">
+      <td></td>
+      <td class="name-cell" style="font-family:var(--font-ui);font-size:12px;font-weight:700;letter-spacing:0.5px;">TOTALS</td>
+      <td>${fmtN(totalEst)}</td>
+      <td>${fmtN(totalAct)}</td>
+      <td>${fmtPct(shopEff)}</td>
+      <td class="${totalHrsSaved >= 0 ? 'pl-positive' : 'pl-negative'}">${totalHrsSaved >= 0 ? '+' : ''}${fmtN(totalHrsSaved)}</td>
+      <td>${fmt$(totalValue)}</td>
+      <td>${fmt$(totalLabor)}</td>
+      <td class="${totalPL >= 0 ? 'pl-positive' : 'pl-negative'}">${totalPL >= 0 ? '+' : ''}${fmt$(totalPL)}</td>
+      <td>—</td>
+      <td>—</td>
+      <td class="eff-${effClass(shopEff)}">${fmt$(totalBonus)}</td>
+    </tr>
+  `;
+
+  // Update sort headers
+  document.querySelectorAll('th').forEach(th => {
+    th.classList.remove('sort-asc','sort-desc');
+    if (th.dataset.col === sortCol) th.classList.add(sortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+  });
+}
+
+// ─── SORT ─────────────────────────────────────────────────────────────────────
+document.querySelectorAll('th[data-col]').forEach(th => {
+  th.addEventListener('click', () => {
+    if (sortCol === th.dataset.col) {
+      sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      sortCol = th.dataset.col;
+      sortDir = th.dataset.type === 'num' ? 'desc' : 'asc';
+    }
+    refresh();
+  });
+});
+
+// ─── GAUGE / DETAIL ───────────────────────────────────────────────────────────
+function showDetail(code) {
+  const data = getAll();
+  const e = data.find(x => x.code === code);
+  if (!e) return;
+
+  if (selectedEmployee === code) {
+    selectedEmployee = null;
+    document.getElementById('gauge-placeholder').style.display = 'flex';
+    document.getElementById('gauge-content').style.display = 'none';
+    document.querySelectorAll('tbody tr').forEach(tr => tr.classList.remove('selected'));
+    return;
+  }
+
+  selectedEmployee = code;
+  document.querySelectorAll('tbody tr').forEach(tr => {
+    tr.classList.toggle('selected', tr.dataset.code === code);
+  });
+
+  document.getElementById('gauge-placeholder').style.display = 'none';
+  document.getElementById('gauge-content').style.display = 'flex';
+  document.getElementById('gauge-name').textContent = e.name;
+  document.getElementById('gauge-code').textContent = 'Code #' + e.code + ' · ' + e.bonusTier + ' Bonus Tier';
+  document.getElementById('gauge-eff-label').textContent = fmtPct(e.efficiency);
+  document.getElementById('gauge-eff-label').style.color = e.efficiency >= 100 ? 'var(--green)' : e.efficiency >= 70 ? 'var(--amber)' : 'var(--red)';
+
+  // Gauge arc: 0% = start, 200% = full arc (251.3 circumference of half circle)
+  const arcLen = 251.3;
+  const pct = Math.min(e.efficiency / 200, 1); // cap at 200%
+  const dashOffset = arcLen * (1 - pct);
+  const arc = document.getElementById('gauge-arc');
+  arc.style.strokeDashoffset = dashOffset;
+  arc.style.stroke = e.efficiency >= 100 ? 'var(--green)' : e.efficiency >= 70 ? 'var(--amber)' : 'var(--red)';
+
+  // Needle: -90deg = 0%, 0deg = 100%, +90deg = 200%
+  const angle = (pct * 180) - 90;
+  document.getElementById('gauge-needle').setAttribute('transform', `rotate(${angle}, 100, 100)`);
+
+  const ec = effClass(e.efficiency);
+  document.getElementById('gauge-stats').innerHTML = `
+    <div class="gauge-stat">
+      <div class="gauge-stat-label">Est Hours</div>
+      <div class="gauge-stat-value">${fmtN(e.estHours)}</div>
+    </div>
+    <div class="gauge-stat">
+      <div class="gauge-stat-label">Actual Hours</div>
+      <div class="gauge-stat-value">${fmtN(e.actualHours)}</div>
+    </div>
+    <div class="gauge-stat">
+      <div class="gauge-stat-label">Hours Saved</div>
+      <div class="gauge-stat-value" style="color:${e.hoursSaved >= 0 ? 'var(--green)' : 'var(--red)'}">${e.hoursSaved >= 0 ? '+' : ''}${fmtN(e.hoursSaved)}</div>
+    </div>
+    <div class="gauge-stat">
+      <div class="gauge-stat-label">Value Produced</div>
+      <div class="gauge-stat-value">${fmt$(e.valueProduced)}</div>
+    </div>
+    <div class="gauge-stat">
+      <div class="gauge-stat-label">Labor Cost</div>
+      <div class="gauge-stat-value">${fmt$(e.laborCost)}</div>
+    </div>
+    <div class="gauge-stat">
+      <div class="gauge-stat-label">Profit / Loss</div>
+      <div class="gauge-stat-value" style="color:${e.profitLoss >= 0 ? 'var(--green)' : 'var(--red)'}">${e.profitLoss >= 0 ? '+' : ''}${fmt$(e.profitLoss)}</div>
+    </div>
+    <div class="gauge-stat">
+      <div class="gauge-stat-label">Effective Rate</div>
+      <div class="gauge-stat-value">${fmt$(e.effectiveRate)}/hr</div>
+    </div>
+    <div class="gauge-stat">
+      <div class="gauge-stat-label">Bonus Amount</div>
+      <div class="gauge-stat-value" style="color:var(--${ec})">${e.bonusAmount > 0 ? fmt$(e.bonusAmount) : 'No Bonus'}</div>
+    </div>
+    <div class="gauge-stat">
+      <div class="gauge-stat-label">Total Hours</div>
+      <div class="gauge-stat-value">${fmtN(e.totalHours, 2)}</div>
+    </div>
+    <div class="gauge-stat">
+      <div class="gauge-stat-label">OT Hours</div>
+      <div class="gauge-stat-value">${fmtN(e.otHours, 2)}</div>
+    </div>
+  `;
+}
+
+// ─── ENTRY CARDS ──────────────────────────────────────────────────────────────
+function buildEntryCards() {
+  const grid = document.getElementById('entry-grid');
+  grid.innerHTML = '';
+  employees.forEach((e, i) => {
+    const card = document.createElement('div');
+    card.className = 'entry-card';
+    card.innerHTML = `
+      <div class="entry-card-header">
+        <div>
+          <div class="entry-card-name">${e.name}</div>
+          <div class="entry-card-code">#${e.code}</div>
+        </div>
+        <button class="btn-remove" onclick="removeEmployee('${e.code}')">&#10005; Remove</button>
+      </div>
+      <div class="field-row">
+        <div class="field-group">
+          <div class="field-label">Est Hours</div>
+          <input class="field-input" type="number" step="0.001" value="${e.estHours}" data-code="${e.code}" data-field="estHours" oninput="updateField(this)">
+        </div>
+        <div class="field-group">
+          <div class="field-label">Actual Hours</div>
+          <input class="field-input" type="number" step="0.001" value="${e.actualHours}" data-code="${e.code}" data-field="actualHours" oninput="updateField(this)">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-group">
+          <div class="field-label">Total Hours</div>
+          <input class="field-input" type="number" step="0.01" value="${e.totalHours}" data-code="${e.code}" data-field="totalHours" oninput="updateField(this)">
+        </div>
+        <div class="field-group">
+          <div class="field-label">OT Hours</div>
+          <input class="field-input" type="number" step="0.01" value="${e.otHours}" data-code="${e.code}" data-field="otHours" oninput="updateField(this)">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field-group" style="grid-column:1/-1;">
+          <div class="field-label">Payroll ($)</div>
+          <input class="field-input" type="number" step="0.01" value="${e.payroll}" data-code="${e.code}" data-field="payroll" oninput="updateField(this)">
+        </div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function updateField(input) {
+  const { code, field } = input.dataset;
+  const emp = employees.find(e => e.code === code);
+  if (emp) {
+    emp[field] = parseFloat(input.value) || 0;
+    refresh();
+  }
+}
+
+function removeEmployee(code) {
+  if (!confirm('Remove this employee from the dashboard?')) return;
+  employees = employees.filter(e => e.code !== code);
+  if (selectedEmployee === code) {
+    selectedEmployee = null;
+    document.getElementById('gauge-placeholder').style.display = 'flex';
+    document.getElementById('gauge-content').style.display = 'none';
+  }
+  buildEntryCards();
+  refresh();
+}
+
+function addEmployee() {
+  const code = document.getElementById('new-code').value.trim();
+  const name = document.getElementById('new-name').value.trim();
+  const estHours = parseFloat(document.getElementById('new-est').value) || 0;
+  const actualHours = parseFloat(document.getElementById('new-actual').value) || 0;
+  const totalHours = parseFloat(document.getElementById('new-total').value) || 0;
+  const otHours = parseFloat(document.getElementById('new-ot').value) || 0;
+  const payroll = parseFloat(document.getElementById('new-payroll').value) || 0;
+  if (!code || !name) { alert('Code and Name are required.'); return; }
+  if (employees.find(e => e.code === code)) { alert('Employee code already exists.'); return; }
+  employees.push({ code, name, estHours, actualHours, totalHours, otHours, payroll });
+  ['new-code','new-name','new-est','new-actual','new-total','new-ot','new-payroll'].forEach(id => document.getElementById(id).value = '');
+  buildEntryCards();
+  refresh();
+}
+
+// ─── PERIOD / RATE ─────────────────────────────────────────────────────────────
+function updatePeriod(val) {
+  period = val;
+  document.getElementById('period-display').value = val;
+  document.getElementById('period-title').textContent = val;
+}
+
+function syncRate(val) {
+  const r = parseFloat(val);
+  if (r > 0) {
+    shopRate = r;
+    document.getElementById('shop-rate').value = r;
+    refresh();
+  }
+}
+
+document.getElementById('shop-rate').addEventListener('input', function() {
+  const r = parseFloat(this.value);
+  if (r > 0) {
+    shopRate = r;
+    document.getElementById('shop-rate-entry').value = r;
+    refresh();
+  }
+});
+
+// ─── TOGGLE ───────────────────────────────────────────────────────────────────
+function toggleDataEntry() {
+  const body = document.getElementById('data-entry-body');
+  const toggle = document.getElementById('data-entry-toggle');
+  const arrow = document.getElementById('toggle-arrow');
+  const open = body.classList.toggle('open');
+  toggle.classList.toggle('collapsed', !open);
+  arrow.classList.toggle('open', open);
+  if (open) buildEntryCards();
+}
+
+// ─── REFRESH ──────────────────────────────────────────────────────────────────
+function refresh() {
+  const data = getAll();
+  updateMetrics(data);
+  updateBarChart(data);
+  updateTable(data);
+  if (selectedEmployee) showDetail(selectedEmployee);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+refresh();
+</script>
+</body>
+</html>
