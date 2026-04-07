@@ -436,12 +436,12 @@
     <div class="card">
       <div class="card-label">Shop Efficiency</div>
       <div class="card-value" id="m-efficiency">—</div>
-      <div class="card-sub">Est Hrs / Actual Hrs</div>
+      <div class="card-sub">Hrs Completed / Hrs on Jobs</div>
     </div>
     <div class="card">
       <div class="card-label">Total Value Produced</div>
       <div class="card-value" id="m-value">—</div>
-      <div class="card-sub">Est Hrs × Shop Rate</div>
+      <div class="card-sub">Hrs Completed × Shop Rate</div>
     </div>
     <div class="card">
       <div class="card-label">Total Labor Cost</div>
@@ -529,8 +529,9 @@
           <tr>
             <th data-col="code" data-type="num">Code</th>
             <th data-col="name" data-type="str">Name</th>
-            <th data-col="estHours" data-type="num">Est Hrs</th>
-            <th data-col="actualHours" data-type="num">Actual Hrs</th>
+            <th data-col="estHours" data-type="num" title="Standard hours for work completed">Hrs Completed</th>
+            <th data-col="actualHours" data-type="num" title="Hours spent on jobs">Hrs on Jobs</th>
+            <th data-col="totalHours" data-type="num" title="Regular + overtime hours worked">Hrs Worked</th>
             <th data-col="efficiency" data-type="num">Eff %</th>
             <th data-col="hoursSaved" data-type="num">Hrs Saved</th>
             <th data-col="valueProduced" data-type="num">Value Produced</th>
@@ -581,7 +582,7 @@
             <input class="field-input" type="number" id="new-actual" placeholder="0.000" step="0.001">
           </div>
           <div class="field-group">
-            <div class="field-label">Total Hours</div>
+            <div class="field-label">Hours Worked</div>
             <input class="field-input" type="number" id="new-total" placeholder="0.00" step="0.01">
           </div>
           <div class="field-group">
@@ -779,6 +780,7 @@ function updateTable(data) {
       <td class="name-cell">${e.name}</td>
       <td>${fmtN(e.estHours)}</td>
       <td>${fmtN(e.actualHours)}</td>
+      <td>${fmtN(e.totalHours, 2)}</td>
       <td class="eff-${ec}">${fmtPct(e.efficiency)}</td>
       <td class="${e.hoursSaved >= 0 ? 'pl-positive' : 'pl-negative'}">${e.hoursSaved >= 0 ? '+' : ''}${fmtN(e.hoursSaved)}</td>
       <td>${fmt$(e.valueProduced)}</td>
@@ -808,6 +810,7 @@ function updateTable(data) {
       <td class="name-cell" style="font-family:var(--font-ui);font-size:12px;font-weight:700;letter-spacing:0.5px;">TOTALS</td>
       <td>${fmtN(totalEst)}</td>
       <td>${fmtN(totalAct)}</td>
+      <td>${fmtN(data.reduce((s,e)=>s+e.totalHours,0),2)}</td>
       <td>${fmtPct(shopEff)}</td>
       <td class="${totalHrsSaved >= 0 ? 'pl-positive' : 'pl-negative'}">${totalHrsSaved >= 0 ? '+' : ''}${fmtN(totalHrsSaved)}</td>
       <td>${fmt$(totalValue)}</td>
@@ -912,7 +915,7 @@ function showDetail(code) {
       <div class="gauge-stat-value" style="color:var(--${ec})">${e.bonusAmount > 0 ? fmt$(e.bonusAmount) : 'No Bonus'}</div>
     </div>
     <div class="gauge-stat">
-      <div class="gauge-stat-label">Total Hours</div>
+      <div class="gauge-stat-label">Hours Worked</div>
       <div class="gauge-stat-value">${fmtN(e.totalHours, 2)}</div>
     </div>
     <div class="gauge-stat">
@@ -949,7 +952,7 @@ function buildEntryCards() {
       </div>
       <div class="field-row">
         <div class="field-group">
-          <div class="field-label">Total Hours</div>
+          <div class="field-label">Hours Worked</div>
           <input class="field-input" type="number" step="0.01" value="${e.totalHours}" data-code="${e.code}" data-field="totalHours" oninput="updateField(this)">
         </div>
         <div class="field-group">
