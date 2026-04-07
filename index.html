@@ -1255,7 +1255,7 @@ function onRateChange(v) {
 // ═══════════════════════════════════════════════════════════════
 // PERSISTENCE (localStorage)
 // ═══════════════════════════════════════════════════════════════
-const LS_KEY = 'hcg_dashboard_v1';
+const LS_KEY = 'hcg_dashboard_v2';
 
 function saveData() {
   try {
@@ -1268,10 +1268,23 @@ function loadData() {
     const raw = localStorage.getItem(LS_KEY);
     if (!raw) return;
     const d = JSON.parse(raw);
-    if (d.employees && d.employees.length)  employees    = d.employees;
-    if (d.records   && d.records.length)    records      = d.records;
-    if (d.nextRecordId)                     nextRecordId = d.nextRecordId;
-    if (d.shopRate  > 0)                    shopRate     = d.shopRate;
+
+    // Merge employees: keep stored, add any new default employees not yet in store
+    if (d.employees && d.employees.length) {
+      const storedCodes = new Set(d.employees.map(e => e.code));
+      const newDefaults = employees.filter(e => !storedCodes.has(e.code));
+      employees = [...d.employees, ...newDefaults];
+    }
+
+    // Merge records: keep stored, add any new default records (by id) not yet in store
+    if (d.records && d.records.length) {
+      const storedIds = new Set(d.records.map(r => r.id));
+      const newDefaults = records.filter(r => !storedIds.has(r.id));
+      records = [...d.records, ...newDefaults];
+      nextRecordId = Math.max(...records.map(r => r.id)) + 1;
+    }
+
+    if (d.shopRate > 0) { shopRate = d.shopRate; }
   } catch(e) { console.warn('Load failed:', e); }
 }
 
