@@ -512,7 +512,7 @@ let periodValue = '2026-03';
 let selectedEmployee = null;
 let sortCol = 'empEff';
 let sortDir = 'desc';
-let nextRecordId = 12;
+let nextRecordId = 24;
 
 let employees = [
   { code:'121', name:'Jade McMillon',    hourlyRate:0 },
@@ -521,6 +521,7 @@ let employees = [
   { code:'161', name:'Lupe Tapia',       hourlyRate:0 },
   { code:'163', name:'Armando Rendon',   hourlyRate:0 },
   { code:'171', name:'Hector Gonzalez',  hourlyRate:0 },
+  { code:'172', name:'Selvin Gonzalez',  hourlyRate:0 },
   { code:'177', name:'Gregorio Sigona',  hourlyRate:0 },
   { code:'188', name:'Daniel Hernandez', hourlyRate:0 },
   { code:'198', name:'Roland Fields',    hourlyRate:0 },
@@ -540,6 +541,19 @@ let records = [
   { id:9,  code:'150', period:'2026-03', estHours:136.300, actualHours:149.900, hoursWorked:222.33, otHours:42.18, payroll:6085.64 },
   { id:10, code:'161', period:'2026-03', estHours:193.933, actualHours:206.817, hoursWorked:237.33, otHours:57.28, payroll:6781.85 },
   { id:11, code:'198', period:'2026-03', estHours:214.183, actualHours:129.117, hoursWorked:225.78, otHours:44.52, payroll:4464.76 },
+  // February 2026 — Performance: Employee Breakdown + Attendance: Payroll Rate Breakdown
+  { id:12, code:'121', period:'2026-02', estHours:254.717, actualHours:131.900, hoursWorked:233.57, otHours:73.57, payroll:8110.48 },
+  { id:13, code:'132', period:'2026-02', estHours:180.133, actualHours:176.117, hoursWorked:204.15, otHours:44.15, payroll:5429.44 },
+  { id:14, code:'150', period:'2026-02', estHours:112.950, actualHours:115.850, hoursWorked:188.82, otHours:28.82, payroll:5080.64 },
+  { id:15, code:'161', period:'2026-02', estHours:206.967, actualHours:206.067, hoursWorked:248.50, otHours:88.50, payroll:7318.78 },
+  { id:16, code:'163', period:'2026-02', estHours:178.767, actualHours:173.933, hoursWorked:241.82, otHours:90.48, payroll:6028.20 },
+  { id:17, code:'171', period:'2026-02', estHours:165.667, actualHours:175.734, hoursWorked:242.68, otHours:82.68, payroll:6248.56 },
+  { id:18, code:'172', period:'2026-02', estHours:110.367, actualHours:111.267, hoursWorked:161.55, otHours:41.55, payroll:5105.09 },
+  { id:19, code:'177', period:'2026-02', estHours:150.508, actualHours:196.201, hoursWorked:250.38, otHours:90.38, payroll:6502.66 },
+  { id:20, code:'188', period:'2026-02', estHours:239.317, actualHours:178.183, hoursWorked:223.45, otHours:63.45, payroll:5103.52 },
+  { id:21, code:'198', period:'2026-02', estHours:331.400, actualHours:143.666, hoursWorked:226.78, otHours:66.78, payroll:4683.16 },
+  { id:22, code:'207', period:'2026-02', estHours:176.417, actualHours:110.051, hoursWorked:201.02, otHours:61.05, payroll:5093.91 },
+  { id:23, code:'212', period:'2026-02', estHours:16.267,  actualHours:9.567,   hoursWorked:144.28, otHours:6.42,  payroll:1917.40 },
 ];
 
 // ═══════════════════════════════════════════════════════════════
