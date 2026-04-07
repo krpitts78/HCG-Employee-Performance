@@ -255,9 +255,9 @@ select.field-input{font-family:var(--font-ui);}
       <div class="card-sub">Hrs Completed × Shop Rate</div>
     </div>
     <div class="card">
-      <div class="card-label">Total Profit / Loss</div>
+      <div class="card-label">Total Net Value</div>
       <div class="card-value" id="m-profit">—</div>
-      <div class="card-sub">Value Produced − Payroll</div>
+      <div class="card-sub">Value Produced − Calc. Pay</div>
     </div>
     <div class="card">
       <div class="card-label">Total Bonus Payout</div>
@@ -326,10 +326,9 @@ select.field-input{font-family:var(--font-ui);}
             <th data-col="otHours"       data-type="num">OT Hrs</th>
             <th data-col="jobEff"        data-type="num">Job Eff %</th>
             <th data-col="empEff"        data-type="num" class="emp-eff-col" title="Bonus Basis: Hrs Completed / Hrs Worked">Emp Eff %&#9733;</th>
-            <th data-col="hoursSaved"    data-type="num">Hrs Saved</th>
             <th data-col="valueProduced" data-type="num">Value Produced</th>
-            <th data-col="profitLoss"    data-type="num">Profit / Loss</th>
-            <th data-col="effectiveRate" data-type="num">Rate/Hr</th>
+            <th data-col="pay"           data-type="num" title="(Hrs Worked − OT) × Rate + OT × Rate × 1.5">Pay</th>
+            <th data-col="netValue"      data-type="num">Net Value</th>
             <th data-col="bonusTier"     data-type="str">Bonus Tier</th>
             <th data-col="bonusAmount"   data-type="num">Bonus</th>
           </tr>
@@ -476,6 +475,7 @@ select.field-input{font-family:var(--font-ui);}
           </select>
         </div>
         <span id="perf-record-count" style="font-size:11px;color:var(--text-muted);margin-left:auto;"></span>
+        <button class="btn btn-danger btn-sm" onclick="deleteFilteredRecords()" style="margin-left:8px;">&#10005; Delete Filtered</button>
       </div>
 
       <div class="table-wrap" style="margin-top:10px;">
@@ -613,19 +613,21 @@ function aggregateByEmployee(recs) {
 }
 
 function computeRow(e) {
-  const jobEff  = e.actualHours  > 0 ? (e.estHours / e.actualHours)  * 100 : 0;
-  const empEff  = e.hoursWorked  > 0 ? (e.estHours / e.hoursWorked)  * 100 : 0;
-  const hoursSaved    = e.estHours - e.actualHours;
+  const emp        = employees.find(x => x.code === e.code);
+  const hourlyRate = emp ? (emp.hourlyRate || 0) : 0;
+  const regHours   = Math.max(0, e.hoursWorked - e.otHours);
+  const pay        = regHours * hourlyRate + e.otHours * hourlyRate * 1.5;
+  const jobEff     = e.actualHours > 0 ? (e.estHours / e.actualHours) * 100 : 0;
+  const empEff     = e.hoursWorked > 0 ? (e.estHours / e.hoursWorked) * 100 : 0;
   const valueProduced = e.estHours * shopRate;
-  const profitLoss    = valueProduced - e.payroll;
-  const effectiveRate = e.hoursWorked > 0 ? e.payroll / e.hoursWorked : 0;
+  const netValue   = valueProduced - pay;
   let bonusAmount = 0, bonusTier = 'None';
   if      (empEff >= 100) { bonusAmount=500; bonusTier='100%+';  }
   else if (empEff >=  90) { bonusAmount=400; bonusTier='90–99%'; }
   else if (empEff >=  80) { bonusAmount=300; bonusTier='80–89%'; }
   else if (empEff >=  70) { bonusAmount=200; bonusTier='70–79%'; }
   else                    { bonusAmount=0;   bonusTier='<70%';   }
-  return { ...e, jobEff, empEff, hoursSaved, valueProduced, profitLoss, effectiveRate, bonusAmount, bonusTier };
+  return { ...e, jobEff, empEff, pay, netValue, valueProduced, bonusAmount, bonusTier };
 }
 
 function getDashboardData() {
@@ -693,7 +695,7 @@ function updateMetrics(data) {
   const shopJob   = totalAct > 0 ? (totalEst/totalAct)*100 : 0;
   const shopEmp   = totalWrk > 0 ? (totalEst/totalWrk)*100 : 0;
   const totalVal  = data.reduce((s,e)=>s+e.valueProduced,0);
-  const totalPL   = data.reduce((s,e)=>s+e.profitLoss,0);
+  const totalPL   = data.reduce((s,e)=>s+e.netValue,0);
   const totalBon  = data.reduce((s,e)=>s+e.bonusAmount,0);
   const qualify   = data.filter(e=>e.bonusAmount>0).length;
 
@@ -796,10 +798,9 @@ function updateTable(data) {
       <td>${fmtN(e.otHours,2)}</td>
       <td class="eff-${jc}">${fmtP(e.jobEff)}</td>
       <td class="eff-${ec}" style="font-weight:700;">${fmtP(e.empEff)}</td>
-      <td class="${e.hoursSaved>=0?'pl-pos':'pl-neg'}">${e.hoursSaved>=0?'+':''}${fmtN(e.hoursSaved)}</td>
       <td>${fmt$(e.valueProduced)}</td>
-      <td class="${e.profitLoss>=0?'pl-pos':'pl-neg'}">${e.profitLoss>=0?'+':''}${fmt$(e.profitLoss)}</td>
-      <td>${fmt$(e.effectiveRate)}</td>
+      <td>${e.pay>0?fmt$(e.pay):'<span style="color:var(--text-muted)">—</span>'}</td>
+      <td class="${e.netValue>=0?'pl-pos':'pl-neg'}">${e.pay>0?(e.netValue>=0?'+':'')+fmt$(e.netValue):'<span style="color:var(--text-muted)">—</span>'}</td>
       <td><span class="bonus-chip ${ec}">${e.bonusTier}</span></td>
       <td class="${e.bonusAmount>0?'eff-green':'eff-red'}">${e.bonusAmount>0?fmt$(e.bonusAmount):'—'}</td>
     `;
@@ -813,9 +814,9 @@ function updateTable(data) {
   const tAct  = data.reduce((s,e)=>s+e.actualHours,0);
   const tWrk  = data.reduce((s,e)=>s+e.hoursWorked,0);
   const tOT   = data.reduce((s,e)=>s+e.otHours,0);
-  const tSav  = data.reduce((s,e)=>s+e.hoursSaved,0);
   const tVal  = data.reduce((s,e)=>s+e.valueProduced,0);
-  const tPL   = data.reduce((s,e)=>s+e.profitLoss,0);
+  const tPay  = data.reduce((s,e)=>s+e.pay,0);
+  const tNet  = data.reduce((s,e)=>s+e.netValue,0);
   const tBon  = data.reduce((s,e)=>s+e.bonusAmount,0);
   const sJob  = tAct>0?(tEst/tAct)*100:0;
   const sEmp  = tWrk>0?(tEst/tWrk)*100:0;
@@ -824,10 +825,10 @@ function updateTable(data) {
       <td></td><td class="name-cell" style="font-family:var(--font-ui);font-size:11px;letter-spacing:.5px;">TOTALS</td>
       <td>${fmtN(tEst)}</td><td>${fmtN(tAct)}</td><td>${fmtN(tWrk,2)}</td><td>${fmtN(tOT,2)}</td>
       <td>${fmtP(sJob)}</td><td style="font-weight:700;">${fmtP(sEmp)}</td>
-      <td class="${tSav>=0?'pl-pos':'pl-neg'}">${tSav>=0?'+':''}${fmtN(tSav)}</td>
       <td>${fmt$(tVal)}</td>
-      <td class="${tPL>=0?'pl-pos':'pl-neg'}">${tPL>=0?'+':''}${fmt$(tPL)}</td>
-      <td>—</td><td>—</td>
+      <td>${tPay>0?fmt$(tPay):'—'}</td>
+      <td class="${tNet>=0?'pl-pos':'pl-neg'}">${tPay>0?(tNet>=0?'+':'')+fmt$(tNet):'—'}</td>
+      <td>—</td>
       <td class="eff-${effClass(sEmp)}">${fmt$(tBon)}</td>
     </tr>`;
 
@@ -889,8 +890,8 @@ function showDetail(code) {
     <div class="gauge-stat"><div class="gauge-stat-label">Job Eff %</div><div class="gauge-stat-value" style="color:var(--${effClass(e.jobEff)})">${fmtP(e.jobEff)}</div></div>
     <div class="gauge-stat"><div class="gauge-stat-label">Emp Eff % &#9733;</div><div class="gauge-stat-value" style="color:var(--${ec});font-weight:700;">${fmtP(e.empEff)}</div></div>
     <div class="gauge-stat"><div class="gauge-stat-label">Value Produced</div><div class="gauge-stat-value">${fmt$(e.valueProduced)}</div></div>
-    <div class="gauge-stat"><div class="gauge-stat-label">Profit / Loss</div><div class="gauge-stat-value" style="color:${e.profitLoss>=0?'var(--green)':'var(--red)'}">${e.profitLoss>=0?'+':''}${fmt$(e.profitLoss)}</div></div>
-    <div class="gauge-stat"><div class="gauge-stat-label">Hrs Saved</div><div class="gauge-stat-value" style="color:${e.hoursSaved>=0?'var(--green)':'var(--red)'}">${e.hoursSaved>=0?'+':''}${fmtN(e.hoursSaved)}</div></div>
+    <div class="gauge-stat"><div class="gauge-stat-label">Pay</div><div class="gauge-stat-value">${e.pay>0?fmt$(e.pay):'<span style="color:var(--text-muted)">No rate set</span>'}</div></div>
+    <div class="gauge-stat"><div class="gauge-stat-label">Net Value</div><div class="gauge-stat-value" style="color:${e.pay>0?(e.netValue>=0?'var(--green)':'var(--red)'):'var(--text-muted)'}">${e.pay>0?(e.netValue>=0?'+':'')+fmt$(e.netValue):'—'}</div></div>
     <div class="gauge-stat"><div class="gauge-stat-label">Bonus Amount</div><div class="gauge-stat-value" style="color:var(--${ec})">${e.bonusAmount>0?fmt$(e.bonusAmount):'No Bonus'}</div></div>
   `;
 }
@@ -938,6 +939,7 @@ function saveEmployee() {
     document.getElementById('emp-name').value='';
     document.getElementById('emp-rate').value='';
   }
+  saveData();
   renderEmployeeTab();
   populateEmployeeDropdowns();
   refreshDashboard();
@@ -966,6 +968,7 @@ function cancelEmployeeEdit() {
 function removeEmployee(code) {
   if (!confirm('Remove this employee? Their performance records will remain.')) return;
   employees = employees.filter(e=>e.code!==code);
+  saveData();
   renderEmployeeTab();
   populateEmployeeDropdowns();
   refreshDashboard();
@@ -1074,6 +1077,7 @@ function saveRecord() {
     }
     records.push({ id:nextRecordId++, code, period, estHours:est, actualHours:actual, hoursWorked:worked, otHours:ot, payroll });
   }
+  saveData();
   renderPerformanceTab();
   buildPeriodSelector();
   refreshDashboard();
@@ -1111,6 +1115,24 @@ function cancelRecordEdit() {
 function deleteRecord(id) {
   if (!confirm('Delete this performance record?')) return;
   records = records.filter(r=>r.id!==id);
+  saveData();
+  renderPerformanceTab();
+  buildPeriodSelector();
+  refreshDashboard();
+}
+
+function deleteFilteredRecords() {
+  const pfilt = document.getElementById('perf-period-filter').value;
+  const efilt = document.getElementById('perf-emp-filter').value;
+  let targets = records;
+  if (pfilt) targets = targets.filter(r=>r.period===pfilt);
+  if (efilt) targets = targets.filter(r=>r.code===efilt);
+  if (!targets.length) { alert('No records match the current filter.'); return; }
+  const desc = [pfilt?fmtPeriod(pfilt):'', efilt?(employees.find(e=>e.code===efilt)||{name:'Unknown'}).name:''].filter(Boolean).join(' / ') || 'all records';
+  if (!confirm(`Delete ${targets.length} record(s) for ${desc}?`)) return;
+  const ids = new Set(targets.map(r=>r.id));
+  records = records.filter(r=>!ids.has(r.id));
+  saveData();
   renderPerformanceTab();
   buildPeriodSelector();
   refreshDashboard();
@@ -1190,6 +1212,7 @@ function saveBatch() {
   alert(saved+' record(s) saved for '+fmtPeriod(period)+'.');
   document.getElementById('batch-form-rows').innerHTML='';
   document.getElementById('batch-save-btn').style.display='none';
+  saveData();
   renderPerformanceTab();
   buildPeriodSelector();
   refreshDashboard();
@@ -1212,7 +1235,30 @@ function switchTab(tab) {
 // ═══════════════════════════════════════════════════════════════
 function onRateChange(v) {
   const r = parseFloat(v);
-  if (r>0) { shopRate=r; refreshDashboard(); }
+  if (r>0) { shopRate=r; saveData(); refreshDashboard(); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PERSISTENCE (localStorage)
+// ═══════════════════════════════════════════════════════════════
+const LS_KEY = 'hcg_dashboard_v1';
+
+function saveData() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({ employees, records, nextRecordId, shopRate }));
+  } catch(e) { console.warn('Save failed:', e); }
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    if (d.employees && d.employees.length)  employees    = d.employees;
+    if (d.records   && d.records.length)    records      = d.records;
+    if (d.nextRecordId)                     nextRecordId = d.nextRecordId;
+    if (d.shopRate  > 0)                    shopRate     = d.shopRate;
+  } catch(e) { console.warn('Load failed:', e); }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1229,6 +1275,8 @@ function refreshDashboard() {
 // ═══════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════
+loadData();
+document.getElementById('shop-rate').value = shopRate;
 buildPeriodSelector();
 refreshDashboard();
 </script>
