@@ -223,15 +223,23 @@ select.field-input{font-family:var(--font-ui);}
     <div class="filter-group">
       <label>View:</label>
       <div class="period-type-btns">
-        <button class="ptype-btn active" data-ptype="month"   onclick="setPeriodType('month')">Month</button>
-        <button class="ptype-btn"        data-ptype="quarter" onclick="setPeriodType('quarter')">Quarter</button>
-        <button class="ptype-btn"        data-ptype="ytd"     onclick="setPeriodType('ytd')">YTD</button>
-        <button class="ptype-btn"        data-ptype="all"     onclick="setPeriodType('all')">All Time</button>
+        <button class="ptype-btn active" data-ptype="month"     onclick="setPeriodType('month')">Month</button>
+        <button class="ptype-btn"        data-ptype="lastmonth" onclick="setPeriodType('lastmonth')">Last Month</button>
+        <button class="ptype-btn"        data-ptype="quarter"   onclick="setPeriodType('quarter')">Quarter</button>
+        <button class="ptype-btn"        data-ptype="ytd"       onclick="setPeriodType('ytd')">YTD</button>
+        <button class="ptype-btn"        data-ptype="all"       onclick="setPeriodType('all')">All Time</button>
+        <button class="ptype-btn"        data-ptype="custom"    onclick="setPeriodType('custom')">Custom</button>
       </div>
     </div>
     <div class="filter-group" id="period-selector-wrap">
       <label id="period-selector-label">Period:</label>
       <select class="filter-select" id="period-selector" onchange="setPeriodValue(this.value)"></select>
+    </div>
+    <div class="filter-group" id="custom-range-wrap" style="display:none;">
+      <label>From:</label>
+      <input type="month" class="filter-select" id="custom-start" onchange="setCustomRange()">
+      <label>To:</label>
+      <input type="month" class="filter-select" id="custom-end" onchange="setCustomRange()">
     </div>
     <div id="filter-period-label"></div>
   </div>
@@ -325,6 +333,7 @@ select.field-input{font-family:var(--font-ui);}
             <th data-col="hoursWorked"   data-type="num">Hrs Worked</th>
             <th data-col="otHours"       data-type="num">OT Hrs</th>
             <th data-col="jobEff"        data-type="num">Job Eff %</th>
+            <th data-col="utilization"   data-type="num" title="Hrs on Jobs / Hrs Worked">Utilization %</th>
             <th data-col="empEff"        data-type="num" class="emp-eff-col" title="Bonus Basis: Hrs Completed / Hrs Worked">Emp Eff %&#9733;</th>
             <th data-col="valueProduced" data-type="num">Value Produced</th>
             <th data-col="pay"           data-type="num" title="(Hrs Worked − OT) × Rate + OT × Rate × 1.5">Pay</th>
@@ -509,6 +518,8 @@ select.field-input{font-family:var(--font-ui);}
 let shopRate = 126;
 let periodType = 'month';
 let periodValue = '2026-03';
+let customStart = '';
+let customEnd = '';
 let selectedEmployee = null;
 let sortCol = 'empEff';
 let sortDir = 'desc';
@@ -613,8 +624,23 @@ function getAvailableYears() {
   return [...new Set(records.map(r => r.period.split('-')[0]))].sort().reverse();
 }
 
+function getLastMonthStr() {
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() - 1);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+}
+
 function getFilteredRecords() {
-  if (periodType === 'month')   return records.filter(r => r.period === periodValue);
+  if (periodType === 'month')     return records.filter(r => r.period === periodValue);
+  if (periodType === 'lastmonth') return records.filter(r => r.period === getLastMonthStr());
+  if (periodType === 'custom') {
+    return records.filter(r => {
+      if (customStart && r.period < customStart) return false;
+      if (customEnd   && r.period > customEnd)   return false;
+      return true;
+    });
+  }
   if (periodType === 'quarter') {
     const [y, q] = periodValue.split('-Q');
     const start = (parseInt(q)-1)*3+1;
@@ -652,6 +678,7 @@ function computeRow(e) {
   const pay        = regHours * hourlyRate + e.otHours * hourlyRate * 1.5;
   const jobEff     = e.actualHours > 0 ? (e.estHours / e.actualHours) * 100 : 0;
   const empEff     = e.hoursWorked > 0 ? (e.estHours / e.hoursWorked) * 100 : 0;
+  const utilization = e.hoursWorked > 0 ? (e.actualHours / e.hoursWorked) * 100 : 0;
   const valueProduced = e.estHours * shopRate;
   const netValue   = valueProduced - pay;
   let bonusAmount = 0, bonusTier = 'None';
@@ -660,7 +687,7 @@ function computeRow(e) {
   else if (empEff >=  80) { bonusAmount=300; bonusTier='80–89%'; }
   else if (empEff >=  70) { bonusAmount=200; bonusTier='70–79%'; }
   else                    { bonusAmount=0;   bonusTier='<70%';   }
-  return { ...e, jobEff, empEff, pay, netValue, valueProduced, bonusAmount, bonusTier };
+  return { ...e, jobEff, empEff, utilization, pay, netValue, valueProduced, bonusAmount, bonusTier };
 }
 
 function getDashboardData() {
@@ -673,12 +700,25 @@ function getDashboardData() {
 function buildPeriodSelector() {
   const sel = document.getElementById('period-selector');
   const wrap = document.getElementById('period-selector-wrap');
+  const customWrap = document.getElementById('custom-range-wrap');
   const lbl  = document.getElementById('period-selector-label');
   sel.innerHTML = '';
 
-  if (periodType === 'all') { wrap.style.display='none'; return; }
-  wrap.style.display = 'flex';
+  wrap.style.display = 'none';
+  customWrap.style.display = 'none';
 
+  if (periodType === 'all' || periodType === 'lastmonth') return;
+
+  if (periodType === 'custom') {
+    customWrap.style.display = 'flex';
+    const startEl = document.getElementById('custom-start');
+    const endEl   = document.getElementById('custom-end');
+    if (customStart) startEl.value = customStart;
+    if (customEnd)   endEl.value   = customEnd;
+    return;
+  }
+
+  wrap.style.display = 'flex';
   let opts = [], labelText = 'Period:';
   if (periodType === 'month') {
     opts = getAvailableMonths();
@@ -700,21 +740,36 @@ function buildPeriodSelector() {
 function setPeriodType(t) {
   periodType = t;
   document.querySelectorAll('.ptype-btn').forEach(b => b.classList.toggle('active', b.dataset.ptype===t));
-  // Set a sensible default value for this type
-  if (t==='month')   { const m=getAvailableMonths();   periodValue = m[0] || ''; }
-  if (t==='quarter') { const q=getAvailableQuarters(); periodValue = q[0] || ''; }
-  if (t==='ytd')     { const y=getAvailableYears();    periodValue = y[0] || ''; }
-  if (t==='all')     { periodValue = ''; }
+  if (t==='month')     { const m=getAvailableMonths();   periodValue = m[0] || ''; }
+  if (t==='quarter')   { const q=getAvailableQuarters(); periodValue = q[0] || ''; }
+  if (t==='ytd')       { const y=getAvailableYears();    periodValue = y[0] || ''; }
+  if (t==='all')       { periodValue = ''; }
+  if (t==='lastmonth') { periodValue = getLastMonthStr(); }
+  if (t==='custom')    {
+    if (!customStart) { const m=getAvailableMonths(); customStart = m[m.length-1]||''; customEnd = m[0]||''; }
+  }
   buildPeriodSelector();
   refreshDashboard();
 }
 
 function setPeriodValue(v) { periodValue = v; refreshDashboard(); }
 
+function setCustomRange() {
+  customStart = document.getElementById('custom-start').value;
+  customEnd   = document.getElementById('custom-end').value;
+  refreshDashboard();
+}
+
 function getPeriodDisplayLabel() {
-  if (periodType==='month')   return fmtPeriod(periodValue);
-  if (periodType==='quarter') return periodValue.replace('-',' ');
-  if (periodType==='ytd')     return periodValue + ' Year-to-Date';
+  if (periodType==='month')     return fmtPeriod(periodValue);
+  if (periodType==='lastmonth') return fmtPeriod(getLastMonthStr());
+  if (periodType==='quarter')   return periodValue.replace('-',' ');
+  if (periodType==='ytd')       return periodValue + ' Year-to-Date';
+  if (periodType==='custom') {
+    const s = customStart ? fmtPeriod(customStart) : '…';
+    const e = customEnd   ? fmtPeriod(customEnd)   : '…';
+    return s + ' – ' + e;
+  }
   return 'All Time';
 }
 
@@ -830,6 +885,7 @@ function updateTable(data) {
       <td>${fmtN(e.hoursWorked,2)}</td>
       <td>${fmtN(e.otHours,2)}</td>
       <td class="eff-${jc}">${fmtP(e.jobEff)}</td>
+      <td>${fmtP(e.utilization)}</td>
       <td class="eff-${ec}" style="font-weight:700;">${fmtP(e.empEff)}</td>
       <td>${fmt$(e.valueProduced)}</td>
       <td>${e.pay>0?fmt$(e.pay):'<span style="color:var(--text-muted)">—</span>'}</td>
@@ -857,7 +913,7 @@ function updateTable(data) {
     <tr class="totals-row">
       <td></td><td class="name-cell" style="font-family:var(--font-ui);font-size:11px;letter-spacing:.5px;">TOTALS</td>
       <td>${fmtN(tEst)}</td><td>${fmtN(tAct)}</td><td>${fmtN(tWrk,2)}</td><td>${fmtN(tOT,2)}</td>
-      <td>${fmtP(sJob)}</td><td style="font-weight:700;">${fmtP(sEmp)}</td>
+      <td>${fmtP(sJob)}</td><td>${fmtP(tWrk>0?(tAct/tWrk)*100:0)}</td><td style="font-weight:700;">${fmtP(sEmp)}</td>
       <td>${fmt$(tVal)}</td>
       <td>${tPay>0?fmt$(tPay):'—'}</td>
       <td class="${tNet>=0?'pl-pos':'pl-neg'}">${tPay>0?(tNet>=0?'+':'')+fmt$(tNet):'—'}</td>
@@ -921,6 +977,7 @@ function showDetail(code) {
     <div class="gauge-stat"><div class="gauge-stat-label">Hrs Worked</div><div class="gauge-stat-value">${fmtN(e.hoursWorked,2)}</div></div>
     <div class="gauge-stat"><div class="gauge-stat-label">OT Hours</div><div class="gauge-stat-value">${fmtN(e.otHours,2)}</div></div>
     <div class="gauge-stat"><div class="gauge-stat-label">Job Eff %</div><div class="gauge-stat-value" style="color:var(--${effClass(e.jobEff)})">${fmtP(e.jobEff)}</div></div>
+    <div class="gauge-stat"><div class="gauge-stat-label">Utilization %</div><div class="gauge-stat-value">${fmtP(e.utilization)}</div></div>
     <div class="gauge-stat"><div class="gauge-stat-label">Emp Eff % &#9733;</div><div class="gauge-stat-value" style="color:var(--${ec});font-weight:700;">${fmtP(e.empEff)}</div></div>
     <div class="gauge-stat"><div class="gauge-stat-label">Value Produced</div><div class="gauge-stat-value">${fmt$(e.valueProduced)}</div></div>
     <div class="gauge-stat"><div class="gauge-stat-label">Pay</div><div class="gauge-stat-value">${e.pay>0?fmt$(e.pay):'<span style="color:var(--text-muted)">No rate set</span>'}</div></div>
